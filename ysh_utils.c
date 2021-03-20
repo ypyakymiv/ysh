@@ -143,9 +143,14 @@ int parse(char *input_text, struct command **output) {
     int curr_sz = 0;
     memset(arg_list, 0x0, len * sizeof(char *));
     token = strtok(curr->name, arg_sep);
+    int counter = 0;
     do {
-      arg_list[curr_sz++] = token;
+      if(*token) { //check if non empty
+        arg_list[curr_sz] = token;
+        curr_sz++;
+      }
     } while((token = strtok(NULL, arg_sep)));
+    arg_list[curr_sz] = NULL;
     curr->args = arg_list;
     curr = curr->next;
   }
