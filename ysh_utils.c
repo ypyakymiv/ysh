@@ -2,10 +2,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 #include "utils.h"
 #include "ysh_utils.h"
 
+#define START_ARGS 10
 #define SHELL_PROMPT "ysh>"
+
+void append(char *, char *);
+void append_from_space(char *, char *);
+
 
 // just writes the prompt
 
@@ -93,6 +99,7 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, read_op))) {
       // read in from token
       // open fd and insert into in
+      append_from_space(curr->name, token);
       curr->in = ec_open(token, O_RDONLY);
     }
     curr = curr->next;
@@ -107,6 +114,7 @@ int parse(char *input_text, struct command **output) {
       // append to token
       // open fd and insert into out
       // set append
+      append_from_space(curr->name, token);
       curr->out = ec_open(token, O_WRONLY|O_APPEND|O_CREAT);
     }
     curr = curr->next;
@@ -120,6 +128,7 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, write_op))) {
       // write to token
       // open fd and insert into out
+      append_from_space(curr->name, token);
       curr->out = ec_open(token, O_WRONLY|O_APPEND|O_CREAT);
     }
     curr = curr->next;
@@ -129,12 +138,49 @@ int parse(char *input_text, struct command **output) {
   curr = cmd;
   char *arg_sep = " ";
   while(curr) {
-    token = strtok(curr->name, arg_sep);
-    curr->name = token;
+    char **arg_list = ec_malloc(START_ARGS * sizeof(char *));
+    int len = START_ARGS;
+    int curr_sz = 0;
+    memset(arg_list, 0x0, len * sizeof(char *));
     while((token = strtok(NULL, arg_sep))) {
-      printf("%s", token);      
+      arg_list[curr_sz++] = token;
     }
     curr = curr->next;
   }
+
+  *output = cmd;
+  return 0;
+}
+
+void append(char *to, char *from) {
+  while(*to) to++;
+  while(*from) {
+    *to = *from;
+    to++;
+    from++;
+  }
+
+  *to = '\0';  
+}
+
+void append_from_space(char *to, char *from) {
+  while(*from && *from == ' ') from++; // iterate into next word
+  while(*from && *from != ' ') from++; // iterate to next space
+  append(to, from);
+}
+
+int exec_command(struct command *cmd) {
+  // set the pipe fd
+  // discover async
+
+  int pid = fork();
+  if(pid) {
+    // should we wait
+    int outcome;
+    waitpid(pid, &outcome, 0x0);
+  } else {
+    execv(*cmd->args, cmd->args);
+  }
+  
   return 0;
 }

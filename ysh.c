@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
   do {
     write_prompt();
     read_line(input);
-    printf("%s", input->data);
     parse(input->data, &input_command);
+    exec_command(input_command);
   } while(0);
 }
