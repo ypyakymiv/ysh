@@ -142,12 +142,13 @@ int parse(char *input_text, struct command **output) {
     int len = START_ARGS;
     int curr_sz = 0;
     memset(arg_list, 0x0, len * sizeof(char *));
-    while((token = strtok(NULL, arg_sep))) {
+    token = strtok(curr->name, arg_sep);
+    do {
       arg_list[curr_sz++] = token;
-    }
+    } while((token = strtok(NULL, arg_sep)));
+    curr->args = arg_list;
     curr = curr->next;
   }
-
   *output = cmd;
   return 0;
 }

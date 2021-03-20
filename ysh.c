@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     write_prompt();
     read_line(input);
     parse(input->data, &input_command);
+    char **argv2 = input_command->args;
     exec_command(input_command);
   } while(0);
 }
