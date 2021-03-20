@@ -11,7 +11,7 @@
 
 void append(char *, char *);
 void append_from_space(char *, char *);
-
+void erase_newline(char *);
 
 // just writes the prompt
 
@@ -54,7 +54,7 @@ int parse(char *input_text, struct command **output) {
   init_command(cmd);
   cmd->name = ec_malloc(sizeof(char) * (strlen(input_text) + 1));
   strcpy(cmd->name, input_text);
-
+  erase_newline(cmd->name);
   char *token;
 
   // first parse for & operator
@@ -185,8 +185,17 @@ int exec_command(struct command *cmd) {
     int outcome;
     waitpid(pid, &outcome, 0x0);
   } else {
-    execv(*cmd->args, cmd->args);
+    // in the child
+    
+    execvp(*cmd->args, cmd->args);
   }
   
   return 0;
+}
+
+void erase_newline(char *a) {
+  while(*a) {
+    if(*a == '\n') *a = '\0';
+    a++;
+  }
 }
