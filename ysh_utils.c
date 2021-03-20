@@ -12,6 +12,7 @@
 void append(char *, char *);
 void append_from_space(char *, char *);
 void erase_newline(char *);
+char *trim_ws(char *);
 
 // just writes the prompt
 
@@ -56,6 +57,7 @@ int parse(char *input_text, struct command **output) {
   strcpy(cmd->name, input_text);
   erase_newline(cmd->name);
   char *token;
+  char *filename;
 
   // first parse for & operator
   char *async_op = "&";
@@ -99,8 +101,9 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, read_op))) {
       // read in from token
       // open fd and insert into in
-      append_from_space(curr->name, token);
-      curr->in = ec_open(token, O_RDONLY);
+      // append_from_space(curr->name, token);
+      filename = trim_ws(token);
+      curr->in = ec_open(filename, O_RDONLY);
     }
     curr = curr->next;
   }
@@ -186,7 +189,9 @@ int exec_command(struct command *cmd) {
     waitpid(pid, &outcome, 0x0);
   } else {
     // in the child
-    
+    if(cmd->in != STDIN_FILENO) {
+      dup2(cmd->in, STDIN_FILENO);
+    }
     execvp(*cmd->args, cmd->args);
   }
   
@@ -198,4 +203,12 @@ void erase_newline(char *a) {
     if(*a == '\n') *a = '\0';
     a++;
   }
+}
+
+char *trim_ws(char *a) {
+  while(*a && *a == ' ') a++;
+  char *start = a;
+  while(*a && *a != ' ') a++;
+  *a = '\0';
+  return start;
 }
