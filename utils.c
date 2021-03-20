@@ -3,6 +3,7 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#include <fcntl.h>
 #include "utils.h"
 
 void *ec_malloc(size_t sz) {
@@ -53,5 +54,5 @@ int is_same_file(char *a, char *b) {
 }
 
 int ec_open(const char *filename, int flags) {
-  return open(filename, flags);  
+  return open(filename, flags, S_IRWXU);  
 }

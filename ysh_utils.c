@@ -117,8 +117,9 @@ int parse(char *input_text, struct command **output) {
       // append to token
       // open fd and insert into out
       // set append
-      append_from_space(curr->name, token);
-      curr->out = ec_open(token, O_WRONLY|O_APPEND|O_CREAT);
+      // append_from_space(curr->name, token);
+      filename = trim_ws(token);
+      curr->out = ec_open(filename, O_WRONLY|O_APPEND|O_CREAT);
     }
     curr = curr->next;
   }
@@ -131,8 +132,9 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, write_op))) {
       // write to token
       // open fd and insert into out
-      append_from_space(curr->name, token);
-      curr->out = ec_open(token, O_WRONLY|O_APPEND|O_CREAT);
+      // append_from_space(curr->name, token);
+      filename = trim_ws(token);
+      curr->out = ec_open(filename, O_WRONLY|O_APPEND|O_CREAT);
     }
     curr = curr->next;
   }
@@ -191,6 +193,9 @@ int exec_command(struct command *cmd) {
     // in the child
     if(cmd->in != STDIN_FILENO) {
       dup2(cmd->in, STDIN_FILENO);
+    }
+    if(cmd->out != STDOUT_FILENO) {
+      dup2(cmd->out, STDOUT_FILENO);
     }
     execvp(*cmd->args, cmd->args);
   }
