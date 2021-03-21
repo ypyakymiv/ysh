@@ -12,10 +12,9 @@
 #define START_ARGS 10
 #define SHELL_PROMPT "ysh>"
 
-void append(char *, char *);
-void append_from_space(char *, char *);
+void append_with_space(char *, char *);
 void erase_newline(char *);
-char *trim_ws(char *);
+char *trim_ws(char *, char **);
 int internal_command(struct command *);
 int dir_exists(char *);
 
@@ -67,17 +66,16 @@ int parse(char *input_text, struct command **output) {
   // first parse for & operator
   char *async_op = "&";
   token = strtok(cmd->name, async_op);
-  new = ec_malloc(sizeof(struct command));
-  init_command(new);
-  new->name = token;
+  curr->name = token;
+  if(strcmp(curr->name, input_text) != 0) // & was found
+    curr->flags |= ASYNC;
   while((token = strtok(NULL, async_op))) {
     new = ec_malloc(sizeof(struct command));
     init_command(new);
     new->name = token;
-    curr->flags = curr->flags|ASYNC;
+    curr->flags |= ASYNC;
     curr->next = new;
     curr = new;
-    token = strtok(NULL, async_op);
   }
 
   // then parse for pipe operators |
@@ -91,9 +89,9 @@ int parse(char *input_text, struct command **output) {
       pipe(p);
       new = ec_malloc(sizeof(struct command));
       init_command(new);
+      new->flags = curr->flags;
       new->name = token;
       new->in = p[0];
-      curr->flags |= PIPE_INTO;
       curr->out = p[1];
       curr->next = new;
       curr = new;
@@ -110,9 +108,11 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, read_op))) {
       // read in from token
       // open fd and insert into in
-      // append_from_space(curr->name, token);
-      filename = trim_ws(token);
+      char *end;
+      filename = trim_ws(token, &end);
       curr->in = ec_open(filename, O_RDONLY);
+      if(*end)
+        append_with_space(curr->name, end);
     }
     curr = curr->next;
   }
@@ -125,14 +125,14 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, append_op))) {
       // append to token
       // open fd and insert into out
-      // set append
-      // append_from_space(curr->name, token);
-      filename = trim_ws(token);
+      char *end;
+      filename = trim_ws(token, &end);
       curr->out = ec_open(filename, O_WRONLY|O_APPEND|O_CREAT);
+      if(*end) append_with_space(curr->name, end);
     }
     curr = curr->next;
   }
-  
+
   curr = cmd;
   char *write_op = ">";
   while(curr) {
@@ -141,9 +141,10 @@ int parse(char *input_text, struct command **output) {
     if((token = strtok(NULL, write_op))) {
       // write to token
       // open fd and insert into out
-      // append_from_space(curr->name, token);
-      filename = trim_ws(token);
+      char *end;
+      filename = trim_ws(token, &end);
       curr->out = ec_open(filename, O_WRONLY|O_APPEND|O_CREAT);
+      if(*end) append_with_space(curr->name, end);
     }
     curr = curr->next;
   }
@@ -172,21 +173,9 @@ int parse(char *input_text, struct command **output) {
   return 0;
 }
 
-void append(char *to, char *from) {
-  while(*to) to++;
-  while(*from) {
-    *to = *from;
-    to++;
-    from++;
-  }
-
-  *to = '\0';  
-}
-
-void append_from_space(char *to, char *from) {
-  while(*from && *from == ' ') from++; // iterate into next word
-  while(*from && *from != ' ') from++; // iterate to next space
-  append(to, from);
+void append_with_space(char *to, char *from) {
+  strcat(to, " ");
+  strcat(to, from);
 }
 
 int exec_command(struct command *cmd) {
@@ -198,7 +187,8 @@ int exec_command(struct command *cmd) {
     if(pid) {
       // should we wait
       int outcome;
-      waitpid(pid, &outcome, 0x0);
+      if(!curr->flags&ASYNC)
+        waitpid(pid, &outcome, 0x0);
       if(curr->in != STDIN_FILENO) close(curr->in);
       if(curr->out != STDOUT_FILENO) close(curr->out);
     } else {
@@ -231,10 +221,12 @@ void erase_newline(char *a) {
   }
 }
 
-char *trim_ws(char *a) {
+char *trim_ws(char *a, char **end) {
   while(*a && *a == ' ') a++;
   char *start = a;
   while(*a && *a != ' ') a++;
+  if(*a) *end = a + 1;
+  else *end = a;
   *a = '\0';
   return start;
 }
