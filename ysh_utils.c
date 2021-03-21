@@ -1,7 +1,9 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <dirent.h>
 #include <sys/wait.h>
 #include "utils.h"
 #include "ysh_utils.h"
@@ -14,6 +16,7 @@ void append_from_space(char *, char *);
 void erase_newline(char *);
 char *trim_ws(char *);
 int internal_command(struct command *);
+int dir_exists(char *);
 
 // just writes the prompt
 
@@ -235,13 +238,44 @@ void echo(struct command *cmd) {
 }
 
 int cd(struct command *cmd) {
+  if(!cmd->args[1]) return 1;
+  if(dir_exists(cmd->args[1])) {
+    // change working dir
+    char *new_path = realpath(cmd->args[1], NULL);
+    // set path
+    setenv("PWD", new_path, 1);
+    chdir(new_path);
+    // free path
+    free(new_path);
+  } else return 0;
 }
 
 void clr() {
   // print many newlines
+  const int magic_amount_of_newlines = 100;
+  for(int i = 0; i < magic_amount_of_newlines; i++)
+    printf("\n");
 }
 
 void dir(struct command *cmd) {
+  // if no first arg show cur dir
+  char *dir_to_scan;
+  if(cmd->args[1]) {
+    dir_to_scan = cmd->args[1];
+  } else {
+    dir_to_scan = ".";
+  }
+  if(dir_exists(dir_to_scan)) {
+    struct dirent **list;
+    int n;
+    n = scandir(dir_to_scan, &list, NULL, alphasort);
+    for(int i = 0; i < n; i++) {
+      printf("%s\n", list[i]->d_name);
+      free(list[i]);
+    }
+  } else {
+    printf("dir %s does not exists\n", dir_to_scan);
+  }
 
 }
 
@@ -254,7 +288,14 @@ void i_environ() {
 }
 
 void help() {
-
+  printf("%10s - %s\n", "help", "display help information");
+  printf("%10s - %s\n", "environ", "display all environ variables");
+  printf("%10s - %s\n", "echo <...>", "echo all args to output");
+  printf("%10s - %s\n", "cd <dir>", "change directory");
+  printf("%10s - %s\n", "pause", "pause the shell until enter");
+  printf("%10s - %s\n", "clr", "clear the screen");
+  printf("%10s - %s\n", "dir <dir>", "display directory contents");
+  printf("%10s - %s\n", "quit", "quit the shell");
 }
 
 void i_pause() {
@@ -262,7 +303,7 @@ void i_pause() {
 }
 
 void quit() {
-
+  exit(0);
 }
 
 int internal_command(struct command *cmd) {
@@ -312,3 +353,8 @@ int internal_command(struct command *cmd) {
   return 1;
 }
 
+int dir_exists(char *path) {
+  if(realpath(path, NULL))
+    return 1;
+  else return 0;
+}

@@ -13,5 +13,5 @@ int main(int argc, char **argv) {
     read_line(input);
     parse(input->data, &input_command);
     exec_command(input_command);
-  } while(0);
+  } while(1);
 }
