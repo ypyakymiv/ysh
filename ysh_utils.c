@@ -13,6 +13,7 @@ void append(char *, char *);
 void append_from_space(char *, char *);
 void erase_newline(char *);
 char *trim_ws(char *);
+int internal_command(struct command *);
 
 // just writes the prompt
 
@@ -197,7 +198,9 @@ int exec_command(struct command *cmd) {
     if(cmd->out != STDOUT_FILENO) {
       dup2(cmd->out, STDOUT_FILENO);
     }
-    execvp(*cmd->args, cmd->args);
+    if(!internal_command(cmd)) {
+      execvp(*cmd->args, cmd->args);
+    }
   }
   
   return 0;
@@ -217,3 +220,95 @@ char *trim_ws(char *a) {
   *a = '\0';
   return start;
 }
+
+void echo(struct command *cmd) {
+  printf("running echo\n");
+  char **args1 = cmd->args + 1;
+  if(*args1) {
+    printf("%s", *args1);
+    args1++;
+  }
+  while(*args1) {
+   printf(" %s", *args1);
+   args1++;
+  }
+}
+
+int cd(struct command *cmd) {
+}
+
+void clr() {
+  // print many newlines
+}
+
+void dir(struct command *cmd) {
+
+}
+
+void i_environ() {
+  char **env_var = environ;
+  while(env_var) {
+    printf("%s\n", *env_var);
+    env_var++;
+  }
+}
+
+void help() {
+
+}
+
+void i_pause() {
+  // wait until enter
+}
+
+void quit() {
+
+}
+
+int internal_command(struct command *cmd) {
+  const char *i_cmds[] = {"echo", "cd", "clr", "dir", "environ", "help", "pause", "quit", NULL};
+  enum i_cmds_index {ECHO, CD, CLR, DIR, ENVIRON, HELP, PAUSE, QUIT};
+  int match = -1;
+
+
+  int i = 0;
+  while(i_cmds[i]) {
+    if(strcmp(i_cmds[i], *cmd->args) == 0) {
+      match = i;
+      break;
+    }
+    i++;
+  }
+
+  switch(match) {
+    case ECHO:
+      echo(cmd);
+      break;
+    case CD:
+      cd(cmd);
+      break;
+    case CLR:
+      clr();
+      break;
+    case DIR:
+      dir(cmd);
+      break;
+    case ENVIRON:
+      i_environ();
+      break;
+    case HELP:
+      help();
+      break;
+    case PAUSE:
+      i_pause();
+      break;
+    case QUIT:
+      quit();
+      break;
+    default:
+      return 0;
+      break;
+  }
+  return 1;
+}
+

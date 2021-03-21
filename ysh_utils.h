@@ -1,6 +1,8 @@
 #ifndef YSH_UTILS_INCLUDED
 #define YSH_UTILS_INCLUDED
 
+extern char **environ;
+
 struct buffer {
   char *data;
   size_t sz;
@@ -42,5 +44,12 @@ struct command ASYNC_TERM;
 int parse(char *, struct command **);
 int exec_command(struct command *);
 
-
+void echo(struct command *);
+int cd(struct command *);
+void clr();
+void dir(struct command *);
+void i_environ();
+void help();
+void i_pause();
+void quit();
 #endif

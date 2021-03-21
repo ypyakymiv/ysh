@@ -54,5 +54,5 @@ int is_same_file(char *a, char *b) {
 }
 
 int ec_open(const char *filename, int flags) {
-  return open(filename, flags, S_IRWXU);  
+  return open(filename, flags, S_IRUSR|S_IWUSR);  
 }
