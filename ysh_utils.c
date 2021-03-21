@@ -22,7 +22,7 @@ int dir_exists(char *);
 // just writes the prompt
 
 void write_prompt() {
-  printf(SHELL_PROMPT);  
+  printf(SHELL_PROMPT);
 }
 
 // reads input and resizes buffer by the line
@@ -87,10 +87,14 @@ int parse(char *input_text, struct command **output) {
     token = strtok(curr->name, pipe_op);
     curr->name = token;
     while((token = strtok(NULL, pipe_op))) {
+      int p[2];
+      pipe(p);
       new = ec_malloc(sizeof(struct command));
       init_command(new);
       new->name = token;
+      new->in = p[0];
       curr->flags |= PIPE_INTO;
+      curr->out = p[1];
       curr->next = new;
       curr = new;
     }
@@ -188,25 +192,35 @@ void append_from_space(char *to, char *from) {
 int exec_command(struct command *cmd) {
   // set the pipe fd
   // discover async
+  struct command *curr = cmd;
+  while(curr) {
+    int pid = fork();
+    if(pid) {
+      // should we wait
+      int outcome;
+      waitpid(pid, &outcome, 0x0);
+      if(curr->in != STDIN_FILENO) close(curr->in);
+      if(curr->out != STDOUT_FILENO) close(curr->out);
+    } else {
+      if(curr->next && curr->next->in != STDIN_FILENO)
+        close(curr->next->in);
 
-  int pid = fork();
-  if(pid) {
-    // should we wait
-    int outcome;
-    waitpid(pid, &outcome, 0x0);
-  } else {
-    // in the child
-    if(cmd->in != STDIN_FILENO) {
-      dup2(cmd->in, STDIN_FILENO);
+      // in the child
+      if(curr->in != STDIN_FILENO) {
+        dup2(curr->in, STDIN_FILENO);
+        close(curr->in);
+      }
+      if(curr->out != STDOUT_FILENO) {
+        dup2(curr->out, STDOUT_FILENO);
+        close(curr->out);
+      }
+      if(internal_command(curr))
+        exit(0);
+      else
+        execvp(*curr->args, curr->args);
     }
-    if(cmd->out != STDOUT_FILENO) {
-      dup2(cmd->out, STDOUT_FILENO);
-    }
-    if(!internal_command(cmd)) {
-      execvp(*cmd->args, cmd->args);
-    }
+    curr = curr->next;
   }
-  
   return 0;
 }
 
@@ -226,7 +240,6 @@ char *trim_ws(char *a) {
 }
 
 void echo(struct command *cmd) {
-  printf("running echo\n");
   char **args1 = cmd->args + 1;
   if(*args1) {
     printf("%s", *args1);
