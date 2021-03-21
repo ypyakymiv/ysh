@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include "utils.h"
 #include "ysh_utils.h"
@@ -288,14 +289,20 @@ void i_environ() {
 }
 
 void help() {
-  printf("%10s - %s\n", "help", "display help information");
-  printf("%10s - %s\n", "environ", "display all environ variables");
-  printf("%10s - %s\n", "echo <...>", "echo all args to output");
-  printf("%10s - %s\n", "cd <dir>", "change directory");
-  printf("%10s - %s\n", "pause", "pause the shell until enter");
-  printf("%10s - %s\n", "clr", "clear the screen");
-  printf("%10s - %s\n", "dir <dir>", "display directory contents");
-  printf("%10s - %s\n", "quit", "quit the shell");
+  printf("%-10s - %s\n", "help", "display help information");
+  printf("%-10s - %s\n", "environ", "display all environ variables");
+  printf("%-10s - %s\n", "echo <...>", "echo all args to output");
+  printf("%-10s - %s\n", "cd <dir>", "change directory");
+  printf("%-10s - %s\n", "pause", "pause the shell until enter");
+  printf("%-10s - %s\n", "clr", "clear the screen");
+  printf("%-10s - %s\n", "dir <dir>", "display directory contents");
+  printf("%-10s - %s\n", "quit", "quit the shell");
+  printf("you may run any executable in PATH\n");
+  printf("the & operator appended to any command makes it run in background\n");
+  printf("the | operator can be used in between commands to feed the output of one command to the input of another\n");
+  printf("< <filename> redirects input in from a file\n");
+  printf("> <filename> redirects output to a file\n");
+  printf(">> <filename> redirects output and appends to a file\n");
 }
 
 void i_pause() {
@@ -303,7 +310,8 @@ void i_pause() {
 }
 
 void quit() {
-  exit(0);
+  int ppid = getppid();
+  kill(ppid, SIGUSR2);
 }
 
 int internal_command(struct command *cmd) {
