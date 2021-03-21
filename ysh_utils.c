@@ -16,12 +16,15 @@ void append_with_space(char *, char *);
 void erase_newline(char *);
 char *trim_ws(char *, char **);
 int internal_command(struct command *);
+int shell_command(struct command *);
 int dir_exists(char *);
 
 // just writes the prompt
 
 void write_prompt() {
-  printf(SHELL_PROMPT);
+  char *cur_working_dir = getcwd(NULL, 0);
+  printf("%s:%s", cur_working_dir, SHELL_PROMPT);
+  free(cur_working_dir);
 }
 
 // reads input and resizes buffer by the line
@@ -184,6 +187,10 @@ int exec_command(struct command *cmd) {
   // discover async
   struct command *curr = cmd;
   while(curr) {
+    if(shell_command(curr)) {
+      curr = curr->next;
+      continue;
+    }
     int pid = fork();
     if(pid) {
       // should we wait
@@ -257,7 +264,10 @@ int cd(struct command *cmd) {
     chdir(new_path);
     // free path
     free(new_path);
-  } else return 0;
+  } else {
+    printf("not a real path\n");
+    return 0;
+  }
 }
 
 void clr() {
@@ -316,6 +326,8 @@ void help() {
 
 void i_pause() {
   // wait until enter
+  int ppid = getppid();
+  kill(ppid, SIGUSR1);
 }
 
 void quit() {
@@ -323,9 +335,30 @@ void quit() {
   kill(ppid, SIGUSR2);
 }
 
+int shell_command(struct command *cmd) {
+  const char *i_cmds[] = {"cd", NULL};
+  enum i_cmds_index {CD};
+  int match = -1;
+
+  int i = 0;
+  while(i_cmds[i]) {
+    if(strcmp(i_cmds[i], *cmd->args) == 0) {
+      match = i;
+      break;
+    }
+    i++;
+  }
+
+  switch(match) {
+    case CD: cd(cmd); break;
+    default: return 0;
+  }
+  return 1;
+}
+
 int internal_command(struct command *cmd) {
-  const char *i_cmds[] = {"echo", "cd", "clr", "dir", "environ", "help", "pause", "quit", NULL};
-  enum i_cmds_index {ECHO, CD, CLR, DIR, ENVIRON, HELP, PAUSE, QUIT};
+  const char *i_cmds[] = {"echo", "clr", "dir", "environ", "help", "pause", "quit", NULL};
+  enum i_cmds_index {ECHO, CLR, DIR, ENVIRON, HELP, PAUSE, QUIT};
   int match = -1;
 
 
@@ -341,9 +374,6 @@ int internal_command(struct command *cmd) {
   switch(match) {
     case ECHO:
       echo(cmd);
-      break;
-    case CD:
-      cd(cmd);
       break;
     case CLR:
       clr();

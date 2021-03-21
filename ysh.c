@@ -6,9 +6,17 @@
 #include "ysh_utils.h"
 
 void exit_func();
+void pause_func();
 
 int main(int argc, char **argv) {
+  signal(SIGUSR1, pause_func);
   signal(SIGUSR2, exit_func);
+
+  //set shell env variable
+  char *shell = realpath(argv[0], NULL);
+  setenv("shell", shell, 1);
+  free(shell);
+
   int suppress_prompt = 0;
   if(argc > 1) {
     suppress_prompt = 1;
@@ -35,4 +43,9 @@ int main(int argc, char **argv) {
 void exit_func() {
   printf("thanks for using my shell\n");
   exit(0);
+}
+
+void pause_func() {
+  printf("pausing until enter\n");
+  while(getchar() != '\n');
 }
