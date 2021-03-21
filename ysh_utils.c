@@ -67,7 +67,7 @@ int parse(char *input_text, struct command **output) {
   char *async_op = "&";
   token = strtok(cmd->name, async_op);
   curr->name = token;
-  if(strcmp(curr->name, input_text) != 0) // & was found
+  if(strstr(input_text, async_op)) // & was not found
     curr->flags |= ASYNC;
   while((token = strtok(NULL, async_op))) {
     new = ec_malloc(sizeof(struct command));
