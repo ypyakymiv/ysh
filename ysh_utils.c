@@ -26,8 +26,9 @@ void write_prompt() {
 
 // reads input and resizes buffer by the line
 
-void read_line(struct buffer *b) {
-  b->read = getline(&b->data, &b->sz, stdin);  //create an error checked function
+int read_line(struct buffer *b) {
+  b->read = getline(&b->data, &b->sz, stdin);
+  return b->read;
 }
 
 // initializes buffer
@@ -204,8 +205,10 @@ int exec_command(struct command *cmd) {
         dup2(curr->out, STDOUT_FILENO);
         close(curr->out);
       }
-      if(internal_command(curr))
+      if(internal_command(curr)) {
+        close(STDIN_FILENO);
         exit(0);
+      }
       else
         execvp(*curr->args, curr->args);
     }
@@ -241,6 +244,7 @@ void echo(struct command *cmd) {
    printf(" %s", *args1);
    args1++;
   }
+  printf("\n");
 }
 
 int cd(struct command *cmd) {

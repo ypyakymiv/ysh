@@ -1,0 +1,32 @@
+Welcome to ysh (yuri's shell)!
+
+I hope you enjoy your use of it (at your own risk)!
+
+Here are some basics to learn how to use the shell:
+
+There are two modes, interactive and batch mode.
+
+Interactive mode is used by running the shell program with no parameters, causing commands to be read in from the user's typing.
+
+Batch mode is activated when the shell is ran and the first argument is a file that contains a list of commands to be ran consecutively.
+
+Here are some basic functions of the shell:
+
+help - displays shell's usage
+dir <dirname> - display the contents of a dir
+environ - displays all environment variables
+pause - pauses execution of the shell until enter is pressed
+quit - quits the shell and all of its child processes
+echo - echoes all of its arguments
+clr - clears the screen
+cd - changes directory
+
+the & operator can be used to run commands in background
+the | operator can be used to redirect the output of command into the input of other commands
+the < operator reads input from a file
+the > operator outputs command output to a file
+the >> operator appends output instead
+
+you can run any binary found in the directories of the PATH variable or any binary by its full location
+
+Enjoy!

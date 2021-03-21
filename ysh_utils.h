@@ -11,7 +11,7 @@ struct buffer {
 
 void init_buffer(struct buffer *);
 void write_prompt();
-void read_line(struct buffer *);
+int read_line(struct buffer *);
 
 enum command_flags {
   ASYNC = 0x1,
